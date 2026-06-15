@@ -1,111 +1,209 @@
-:root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+@import "tailwindcss";
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+@theme {
+  /* ─── Typography — Font Families ────────────────────────────────────────────
+     Inter: the de-facto standard for product UI (Linear, Figma, Vercel, Stripe)
+     Substitute for CircularXX per design reference (same role, same clarity)    */
+  --font-sans: "Inter Variable", "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", "IBM Plex Mono", ui-monospace, monospace;
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  /* ─── Typography — Type Scale ────────────────────────────────────────────────
+     Base: Design Reference (Inngest) type scale, adapted for dashboard density.
+     Hierarchy via weight, not size explosion. Tracking neg only at ≥18px.       */
 
-  @media (max-width: 1024px) {
-    font-size: 16px;
+  /* caption — 12px: timestamps, metadata, chip text */
+  --text-caption: 12px;
+  --leading-caption: 1.71;
+
+  /* body-sm — 13px: labels, column headers, button text */
+  --text-body-sm: 13px;
+  --leading-body-sm: 1.63;
+
+  /* body — 14px: form fields, table cells, description paragraphs */
+  --text-body: 14px;
+  --leading-body: 1.5;
+
+  /* subheading — 16px: sub-panel titles, group headers */
+  --text-subheading: 16px;
+  --leading-subheading: 1.5;
+
+  /* heading-sm — 18px: section sub-titles */
+  --text-heading-sm: 18px;
+  --leading-heading-sm: 1.33;
+  --tracking-heading-sm: -0.1px;
+
+  /* heading — 24px: dashboard section titles (SectionHeader component) */
+  --text-heading: 24px;
+  --leading-heading: 1.33;
+  --tracking-heading: -0.56px;
+
+  /* stat-value — 28px: KPI numeric values in SummaryMetricCard. Fixed size. */
+  --text-stat: 28px;
+  --leading-stat: 1.0;
+  --tracking-stat: -0.5px;
+
+  /* heading-lg — 36px: major page section titles */
+  --text-heading-lg: 36px;
+  --leading-heading-lg: 1.2;
+  --tracking-heading-lg: -0.96px;
+
+  /* display — 48px: page welcome / landing only. Not for data-dense pages. */
+  --text-display: 48px;
+  --leading-display: 1.11;
+  --tracking-display: -0.96px;
+
+  /* ─── Typography — Font Weights ─────────────────────────────────────────────
+     300 light · 400 regular · 500 medium · 600 semibold · 700 bold            */
+  --font-weight-light:    300;
+  --font-weight-regular:  400;
+  --font-weight-medium:   500;
+  --font-weight-semibold: 600;
+  --font-weight-bold:     700;
+
+  /* ─── Brand Accent — Institutional Green ────────────────────────────────────
+     #0f5132: authoritative, darker than typical edtech green.
+     Reads as "serious institution", not "eco startup".
+     Appears on ≤10% of any screen. Rarity = trustworthiness.                   */
+  --color-primary:       #0f5132;
+  --color-primary-hover: #0a3d25;
+
+  /* ─── Surface System — Cool-Neutral (no warm bias) ─────────────────────────
+     #f8f9fa canvas + #ffffff surface = GitHub/Linear-style cool paper.
+     Old warm tints (#faf9f6, #f2f5f2) are the most common AI-generator tells.  */
+  --color-bg-paper:         #f8f9fa;   /* Body canvas — cool off-white           */
+  --color-bg-surface:       #ffffff;   /* Card & panel surface                   */
+  --color-bg-sidebar:       #eef0f3;   /* Sidebar — clearly darker (GitHub-style)*/
+  --color-bg-sidebar-hover: #e3e6ea;   /* Sidebar nav item hover fill            */
+
+  /* ─── Border System — Pure neutral gray (no greenish cast) ─────────────────
+     3-value border system: standard · strong · sidebar-specific               */
+  --color-bg-border:         #e5e7eb;  /* Standard 1px container border          */
+  --color-bg-border-muted:   #d1d5db;  /* Stronger — form focus rings            */
+  --color-bg-border-sidebar: #dde0e5;  /* Sidebar/topbar right-edge separator    */
+
+  /* ─── Text Ramp — Cool near-black (no warm-green tint) ─────────────────────
+     3-level ramp: primary · secondary · muted + placeholder                    */
+  --color-bg-ink:             #111827;  /* Headings, data, button text            */
+  --color-bg-ink-secondary:   #374151;  /* Labels, column headers                 */
+  --color-bg-ink-muted:       #6b7280;  /* Timestamps, metadata                   */
+  --color-bg-ink-placeholder: #9ca3af;  /* Form placeholders                      */
+
+  /* ─── Semantic Status Colors ────────────────────────────────────────────────
+     Each state: status-X (icon) · text-X (on tinted bg) · border-X · bg-X-tint */
+  --color-status-excellent: #0d9488;
+  --color-status-success:   #16a34a;
+  --color-status-safe:      #16a34a;
+  --color-status-warning:   #d97706;
+  --color-status-danger:    #dc2626;
+  --color-status-info:      #2563eb;
+  --color-status-pending:   #64748b;
+  --color-status-disabled:  #94a3b8;
+
+  /* Semantic text (legible on tinted card backgrounds) */
+  --color-text-excellent: #115e59;
+  --color-text-safe:      #14532d;
+  --color-text-success:   #14532d;
+  --color-text-warning:   #78350f;
+  --color-text-danger:    #7f1d1d;
+  --color-text-info:      #1e3a8a;
+  --color-text-pending:   #1e293b;
+  --color-text-disabled:  #475569;
+
+  /* Semantic borders (alpha 25–30% on white) */
+  --color-border-excellent: rgba(13, 148, 136, 0.25);
+  --color-border-safe:      rgba(22, 163, 74, 0.25);
+  --color-border-pending:   rgba(100, 116, 139, 0.25);
+  --color-border-disabled:  rgba(148, 163, 184, 0.25);
+
+  /* Semantic background tints (4–5% alpha fills for metric cards) */
+  --color-bg-excellent-tint: rgba(13, 148, 136, 0.05);
+  --color-bg-safe-tint:      rgba(22, 163, 74, 0.05);
+  --color-bg-pending-tint:   rgba(100, 116, 139, 0.05);
+  --color-bg-disabled-tint:  rgba(241, 245, 249, 0.6);
+
+  /* ─── Spacing — Base-8 Unit System ──────────────────────────────────────────
+     All spacing is a multiple of 8px (or sub-multiple 4px for micro-gaps).
+     Per design reference density: "comfortable" — ample section breathing room. */
+  --spacing-1: 4px;    /* Icon-label gap, micro-spacing                          */
+  --spacing-2: 8px;    /* Internal component gap, item gap                       */
+  --spacing-3: 12px;   /* Medium component padding, button-sm vertical           */
+  --spacing-4: 16px;   /* Card internal padding (default), list item gap         */
+  --spacing-5: 20px;   /* Container padding medium                               */
+  --spacing-6: 24px;   /* Section gap, card grid gap, nav padding                */
+  --spacing-8: 32px;   /* Section-to-section gap (desktop)                       */
+  --spacing-10: 40px;  /* Section gap maximum                                    */
+  --spacing-12: 48px;  /* Large section spacing                                  */
+  --spacing-16: 64px;  /* Page-level top padding                                 */
+  --spacing-20: 80px;  /* Hero section padding                                   */
+  --spacing-24: 96px;  /* Large layout gap                                       */
+  --spacing-32: 128px; /* Very large layout gap                                  */
+
+  /* ─── Border Radius — Three values only. No over-rounding. ─────────────────
+     sm: 4px inputs/tooltips · md: 6px containers/buttons · full: pills only    */
+  --radius-sm:   4px;     /* Input field, tooltip, small tag                     */
+  --radius-md:   6px;     /* Card, button, dropdown — all structural containers  */
+  --radius-full: 9999px;  /* Pill: StatusBadge, chip, filter tag                 */
+
+  /* ─── Shadows — 3-tier floating vocabulary ───────────────────────────────────
+     Border-only elevation for static cards.
+     Shadow ONLY for: nav bar · interactive (no-border) · floating elements.     */
+
+  /* Navigation bar ambient lift — barely visible */
+  --shadow-subtle: rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
+
+  /* Card ambient if no border — subtle lift without weight */
+  --shadow-subtle-2: rgba(0, 0, 0, 0.1) 0px 1px 3px 0px, rgba(0, 0, 0, 0.1) 0px 1px 2px -1px;
+
+  /* Floating elements: dropdown, popover, dialog, tooltip */
+  --shadow-xl: rgba(0, 0, 0, 0.1) 0px 20px 25px -5px, rgba(0, 0, 0, 0.1) 0px 8px 10px -6px;
+
+  /* ─── Layout Constants ───────────────────────────────────────────────────── */
+  --sidebar-width:  256px;  /* 16rem — fixed, not responsive                    */
+  --topbar-height:   64px;  /* 4rem                                              */
+
+  /* Sage alias — kept for legacy compatibility only. Use bg-sidebar instead. */
+  --color-bg-sage-slate: #eef0f3;
+}
+
+/* ─── Base Layer ────────────────────────────────────────────────────────────── */
+@layer base {
+  body {
+    background-color: var(--color-bg-paper);
+    color: var(--color-bg-ink);
+    font-family: var(--font-sans);
+    font-style: normal;
+    font-synthesis: none;
+    /* Inter cv* alternates: cleaner number forms, better legibility for data UI */
+    font-feature-settings: "cv01", "cv02", "cv03", "cv04";
+    /* Antialiasing: sharper rendering, closer to native app feel */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
+    margin: 0;
+    /* Default body line-height from type scale */
+    line-height: var(--leading-body);
+  }
+
+  /* Headings: tight tracking for hierarchy without size explosion */
+  h1, h2, h3 {
+    letter-spacing: var(--tracking-heading);
+    line-height: var(--leading-heading);
+  }
+
+  h4, h5, h6 {
+    letter-spacing: var(--tracking-heading-sm);
+    line-height: var(--leading-heading-sm);
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+/* ─── Reduced Motion ────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
-}
-
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-}
-
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
-
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
-}
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
-  margin: 0;
-}
-
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
-}
-
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
 }
