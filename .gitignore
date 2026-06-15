@@ -1,0 +1,45 @@
+# OS and editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+!.env.production.example
+!.postgres.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+
+# Node
+node_modules/
+dist/
+build/
+coverage/
+.vite/
+
+# Logs and runtime files
+*.log
+*.pid
+tmp/
+temp/
+
+# Local databases and backups
+*.sqlite3
+*.db
+*.dump
+*.backup
+
+# Test/report artifacts generated locally
+Laporan_Pengujian_CORELASI/
+playwright-report/
+test-results/
