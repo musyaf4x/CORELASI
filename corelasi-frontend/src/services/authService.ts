@@ -1,13 +1,3 @@
-/**
- * @file src/services/authService.ts
- * @description Auth service for CORELASI.
- *
- * MOCK MODE (current): Reads from localStorage, validates against MOCK_USERS_LIST.
- * REAL API MODE (future): Swap implementation to call POST /auth/login via apiPost().
- *
- * Public interface MUST NOT change between modes.
- */
-
 import { MOCK_USERS_LIST } from "@/mocks/users.mock";
 import type { AuthUser } from "@/types/auth";
 import {
@@ -25,14 +15,7 @@ import {
 
 const IS_TEST = import.meta.env.MODE === "test";
 
-// ─── Auth Service ─────────────────────────────────────────────────────────────
-
 export const authService = {
-  /**
-   * Authenticate user by email and password.
-   * Calls real API POST /auth/login/ in development/production.
-   * Falls back to mock data in test suites.
-   */
   login: async (email: string, passwordHash: string): Promise<AuthUser> => {
     if (IS_TEST) {
       return new Promise((resolve, reject) => {
@@ -112,9 +95,6 @@ export const authService = {
     return response.user;
   },
 
-  /**
-   * Log out the current user and clear session data.
-   */
   logout: async (): Promise<void> => {
     if (IS_TEST) {
       localStorage.removeItem("corelasi_user");
@@ -125,7 +105,6 @@ export const authService = {
       await ensureCsrfCookie();
       await apiPost("/auth/logout/");
     } catch {
-      // The local session must still be cleared if the server is unavailable.
     } finally {
       clearSession();
     }
@@ -149,12 +128,6 @@ export const authService = {
     }
   },
 
-  /**
-   * Get the currently authenticated user from the session.
-   * Returns null if no active session.
-   *
-   * REAL API: GET /auth/me (or decode JWT claims from in-memory token)
-   */
   getCurrentUser: (): AuthUser | null => {
     if (!IS_TEST) {
       return getSessionUser();
@@ -208,12 +181,6 @@ export const authService = {
     localStorage.setItem("corelasi_users_db", JSON.stringify(updatedDb));
   },
 
-  /**
-   * Update the teacher assignment data in the current session.
-   * Only valid for guru-role users.
-   *
-   * REAL API: PATCH /users/me/assignments
-   */
   updateAssignments: (
     assignments: AuthUser["assignments"],
   ): AuthUser | null => {
