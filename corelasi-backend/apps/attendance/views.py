@@ -122,8 +122,21 @@ class AbsensiSiswaViewSet(viewsets.ModelViewSet):
         try:
             with transaction.atomic():
                 for rec in records_data:
+                    # Find if record already exists to avoid unique constraint validation failure
+                    siswa_id = rec.get("siswaId") if isinstance(rec, dict) else None
+                    kelas_id = rec.get("kelasId") if isinstance(rec, dict) else None
+                    mapel_id = rec.get("mapelId") if isinstance(rec, dict) else None
+                    tanggal = rec.get("tanggal") if isinstance(rec, dict) else None
+                    
+                    existing_obj = AbsensiSiswa.objects.filter(
+                        siswa_id=siswa_id,
+                        kelas_id=kelas_id,
+                        mapel_id=mapel_id,
+                        tanggal=tanggal
+                    ).first()
+
                     # Validate fields via serializer on each dict
-                    serializer = self.get_serializer(data=rec)
+                    serializer = self.get_serializer(existing_obj, data=rec)
                     serializer.is_valid(raise_exception=True)
                     val_data = serializer.validated_data
 

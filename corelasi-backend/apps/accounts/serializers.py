@@ -121,7 +121,7 @@ class UserDetailSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         password = validated_data.pop("password", None)
         request = self.context.get("request")
-        if password and request and is_showcase_account(request.user):
+        if password and request and is_showcase_account(instance):
             raise serializers.ValidationError(
                 {"password": "Akun showcase tidak dapat mengubah kata sandi."}
             )

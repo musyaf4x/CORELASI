@@ -32,6 +32,30 @@ class AbsensiSiswaSerializer(serializers.ModelSerializer):
             "mapelId", "mapelName", "tanggal", "status", "statusAwal", "keterangan"
         )
 
+    def validate(self, attrs):
+        request = self.context.get("request")
+        if request and request.user:
+            user = request.user
+            from shared.access import is_duty_teacher
+            if user.role == "guru" and not is_duty_teacher(user):
+                status_val = attrs.get("status")
+                existing_obj = self.instance
+
+                # If trying to set/update status to Sakit or Izin
+                if status_val in ["Sakit", "Izin"]:
+                    if not existing_obj or existing_obj.status != status_val:
+                        raise serializers.ValidationError(
+                            {"status": "Guru Pengampu tidak diperbolehkan menginput status Sakit atau Izin."}
+                        )
+
+                # If existing status is Sakit or Izin, and trying to change it
+                if existing_obj and existing_obj.status in ["Sakit", "Izin"]:
+                    if status_val and status_val != existing_obj.status:
+                        raise serializers.ValidationError(
+                            {"status": "Guru Pengampu tidak diperbolehkan mengubah status Sakit/Izin yang telah ditetapkan oleh Guru Piket/Admin."}
+                        )
+        return attrs
+
 
 class PermintaanKoreksiSerializer(serializers.ModelSerializer):
     """Serializer mapping PermintaanKoreksi model to camelCase expectations."""

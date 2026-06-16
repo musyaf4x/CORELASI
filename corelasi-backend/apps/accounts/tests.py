@@ -227,24 +227,43 @@ class AuthenticationAPITests(APITestCase):
 )
 class ShowcaseAuthenticationTests(APITestCase):
     def setUp(self):
+        cache.clear()
         self.demo_admin = User.objects.create_user(
             email="admin@corelasi.test",
             password="SecureDemoPass456!",
             name="Admin Showcase",
             role="admin",
         )
+        self.demo_teacher = User.objects.create_user(
+            email="guru@corelasi.test",
+            password="SecureTeacherPass456!",
+            name="Guru Showcase",
+            role="guru",
+            nip_or_nis="G-001",
+        )
+        self.demo_student = User.objects.create_user(
+            email="siswa@corelasi.test",
+            password="SecureStudentPass456!",
+            name="Siswa Showcase",
+            role="siswa",
+            nip_or_nis="S-002",
+        )
         self.regular_user = User.objects.create_user(
             email="regular@corelasi.test",
             password="SecureRegularPass456!",
             name="Regular User",
             role="siswa",
+            nip_or_nis="S-001",
         )
         self.showcase_url = reverse("accounts:showcase_login")
 
-    def _showcase_login(self):
+    def tearDown(self):
+        cache.clear()
+
+    def _showcase_login(self, email=None):
         response = self.client.post(
             self.showcase_url,
-            {"email": self.demo_admin.email},
+            {"email": email or self.demo_admin.email},
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -278,8 +297,19 @@ class ShowcaseAuthenticationTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertFalse(response.data["success"])
 
-    def test_showcase_account_cannot_delete_records(self):
+    def test_showcase_admin_can_delete_other_users(self):
         access_token = self._showcase_login().data["data"]["accessToken"]
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access_token}")
+
+        response = self.client.delete(
+            reverse("accounts:users-detail", args=[self.regular_user.id])
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(User.objects.filter(id=self.regular_user.id).exists())
+
+    def test_showcase_teacher_keeps_normal_non_admin_write_permissions(self):
+        access_token = self._showcase_login(self.demo_teacher.email).data["data"]["accessToken"]
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access_token}")
 
         response = self.client.delete(
@@ -289,7 +319,7 @@ class ShowcaseAuthenticationTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertTrue(User.objects.filter(id=self.regular_user.id).exists())
 
-    def test_showcase_account_cannot_create_users(self):
+    def test_showcase_admin_can_create_users(self):
         access_token = self._showcase_login().data["data"]["accessToken"]
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access_token}")
 
@@ -305,12 +335,12 @@ class ShowcaseAuthenticationTests(APITestCase):
             format="json",
         )
 
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertFalse(
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(
             User.objects.filter(email="escaped-admin@corelasi.test").exists()
         )
 
-    def test_showcase_account_cannot_update_users(self):
+    def test_showcase_admin_can_update_users(self):
         access_token = self._showcase_login().data["data"]["accessToken"]
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access_token}")
 
@@ -320,12 +350,12 @@ class ShowcaseAuthenticationTests(APITestCase):
             format="json",
         )
 
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.regular_user.refresh_from_db()
-        self.assertEqual(self.regular_user.role, "siswa")
-        self.assertEqual(self.regular_user.status, "aktif")
+        self.assertEqual(self.regular_user.role, "admin")
+        self.assertEqual(self.regular_user.status, "nonaktif")
 
-    def test_showcase_account_cannot_change_its_password(self):
+    def test_showcase_admin_can_change_its_password(self):
         access_token = self._showcase_login().data["data"]["accessToken"]
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access_token}")
 
@@ -338,9 +368,84 @@ class ShowcaseAuthenticationTests(APITestCase):
             format="json",
         )
 
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.demo_admin.refresh_from_db()
+        self.assertTrue(self.demo_admin.check_password("ReplacementPass789!"))
+
+    def test_showcase_admin_can_update_user_password(self):
+        access_token = self._showcase_login().data["data"]["accessToken"]
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access_token}")
+
+        response = self.client.patch(
+            reverse("accounts:users-detail", args=[self.regular_user.id]),
+            {"password": "ReplacementPass789!"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.regular_user.refresh_from_db()
+        self.assertTrue(self.regular_user.check_password("ReplacementPass789!"))
+
+    def test_showcase_admin_can_resolve_password_reset(self):
+        from accounts.models import PasswordResetRequest
+
+        reset_request = PasswordResetRequest.objects.create(user=self.regular_user)
+        access_token = self._showcase_login().data["data"]["accessToken"]
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access_token}")
+
+        response = self.client.patch(
+            reverse("accounts:password-reset-requests-resolve", args=[reset_request.id])
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        reset_request.refresh_from_db()
+        self.assertEqual(reset_request.status, "resolved")
+
+    def test_showcase_admin_cannot_delete_itself(self):
+        access_token = self._showcase_login().data["data"]["accessToken"]
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access_token}")
+
+        response = self.client.delete(
+            reverse("accounts:users-detail", args=[self.demo_admin.id])
+        )
+
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.demo_admin.refresh_from_db()
-        self.assertTrue(self.demo_admin.check_password("SecureDemoPass456!"))
+        self.assertTrue(User.objects.filter(id=self.demo_admin.id).exists())
+
+    def test_showcase_teacher_can_change_its_password_like_normal_role(self):
+        access_token = self._showcase_login(self.demo_teacher.email).data["data"]["accessToken"]
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access_token}")
+
+        response = self.client.post(
+            reverse("accounts:change_password"),
+            {
+                "currentPassword": "SecureTeacherPass456!",
+                "newPassword": "ReplacementPass789!",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.demo_teacher.refresh_from_db()
+        self.assertTrue(self.demo_teacher.check_password("ReplacementPass789!"))
+
+    def test_showcase_student_can_change_its_password_like_normal_role(self):
+        access_token = self._showcase_login(self.demo_student.email).data["data"]["accessToken"]
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access_token}")
+
+        response = self.client.post(
+            reverse("accounts:change_password"),
+            {
+                "currentPassword": "SecureStudentPass456!",
+                "newPassword": "ReplacementPass789!",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.demo_student.refresh_from_db()
+        self.assertTrue(self.demo_student.check_password("ReplacementPass789!"))
 
 
 class AuthenticationCsrfTests(APITestCase):
@@ -464,6 +569,7 @@ class UserManagementAPITests(APITestCase):
     """Integration API tests for User CRUD and Password Reset Flow."""
 
     def setUp(self):
+        cache.clear()
         self.admin = User.objects.create_superuser(
             email="admin@corelasi.test",
             password="adminpassword",
@@ -488,6 +594,9 @@ class UserManagementAPITests(APITestCase):
         # URLs
         self.users_url = "/api/users/"
         self.reset_requests_url = "/api/users/password-reset-requests/"
+
+    def tearDown(self):
+        cache.clear()
 
     def test_admin_can_list_users(self):
         self.client.force_authenticate(user=self.admin)

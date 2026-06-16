@@ -108,6 +108,40 @@ class AttendanceAPITests(APITestCase):
         self.assertEqual(rec.status, "Hadir")
         self.assertEqual(rec.keterangan, "Masuk tepat waktu")
 
+    def test_teacher_can_update_existing_attendance_batch(self):
+        # Create existing record first
+        AbsensiSiswa.objects.create(
+            siswa=self.siswa,
+            kelas=self.kelas,
+            mapel=self.mapel,
+            tanggal="2026-06-08",
+            status="Alpa",
+            keterangan="Initial alpa"
+        )
+
+        self.client.force_authenticate(user=self.teacher)
+
+        payload = [
+            {
+                "siswaId": self.siswa.id,
+                "kelasId": self.kelas.id,
+                "mapelId": self.mapel.id,
+                "tanggal": "2026-06-08",
+                "status": "Hadir",
+                "keterangan": "Terlambat tapi hadir"
+            }
+        ]
+
+        response = self.client.post(self.batch_url, payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data["success"])
+
+        # Check in DB that it is updated
+        self.assertEqual(AbsensiSiswa.objects.count(), 1)
+        rec = AbsensiSiswa.objects.get(siswa=self.siswa)
+        self.assertEqual(rec.status, "Hadir")
+        self.assertEqual(rec.keterangan, "Terlambat tapi hadir")
+
     def test_student_cannot_submit_attendance_batch(self):
         self.client.force_authenticate(user=self.siswa)
         response = self.client.post(self.batch_url, [], format="json")
@@ -374,3 +408,115 @@ class AttendanceAPITests(APITestCase):
         self.assertEqual(absensi.status, "Alpa")
         self.assertEqual(absensi.status_awal, "Hadir")  # Initial status preserved
         self.assertEqual(absensi.keterangan, "Override Admin: Ternyata bolos")
+
+    def test_guru_pengampu_status_restrictions(self):
+        # Create a non-piket guru (regular Guru Pengampu)
+        regular_guru = User.objects.create_user(
+            email="regular_guru@corelasi.test",
+            password="password123",
+            name="Regular Guru",
+            role="guru",
+            is_piket_today=False
+        )
+        from academic.models import Semester
+        active_semester = Semester.objects.filter(status="aktif").first()
+        JadwalPelajaran.objects.create(
+            kelas=self.kelas,
+            mapel=self.mapel,
+            guru=regular_guru,
+            hari="Selasa",
+            waktu_mulai="08:00",
+            waktu_selesai="09:30",
+            semester=active_semester
+        )
+
+        self.client.force_authenticate(user=regular_guru)
+
+        # 1. Guru Pengampu can submit Hadir and Alpa
+        payload_ok = [
+            {
+                "siswaId": self.siswa.id,
+                "kelasId": self.kelas.id,
+                "mapelId": self.mapel.id,
+                "tanggal": "2026-06-09",
+                "status": "Hadir",
+                "keterangan": "Hadir"
+            },
+            {
+                "siswaId": self.siswa_other.id,
+                "kelasId": self.kelas.id,
+                "mapelId": self.mapel.id,
+                "tanggal": "2026-06-09",
+                "status": "Alpa",
+                "keterangan": "Bolos"
+            }
+        ]
+        response = self.client.post(self.batch_url, payload_ok, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # 2. Guru Pengampu is rejected when submitting Sakit
+        payload_sakit = [
+            {
+                "siswaId": self.siswa.id,
+                "kelasId": self.kelas.id,
+                "mapelId": self.mapel.id,
+                "tanggal": "2026-06-10",
+                "status": "Sakit",
+                "keterangan": "Sakit"
+            }
+        ]
+        response = self.client.post(self.batch_url, payload_sakit, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("status", response.data["errors"])
+
+        # 3. Guru Pengampu is rejected when submitting Izin
+        payload_izin = [
+            {
+                "siswaId": self.siswa.id,
+                "kelasId": self.kelas.id,
+                "mapelId": self.mapel.id,
+                "tanggal": "2026-06-10",
+                "status": "Izin",
+                "keterangan": "Izin"
+            }
+        ]
+        response = self.client.post(self.batch_url, payload_izin, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        # 4. Guru Pengampu is blocked from overwriting existing Sakit/Izin record
+        # Set up an existing Sakit record
+        abs_sakit = AbsensiSiswa.objects.create(
+            siswa=self.siswa,
+            kelas=self.kelas,
+            mapel=self.mapel,
+            tanggal="2026-06-11",
+            status="Sakit",
+            keterangan="Sakit disetujui piket"
+        )
+        payload_overwrite = [
+            {
+                "siswaId": self.siswa.id,
+                "kelasId": self.kelas.id,
+                "mapelId": self.mapel.id,
+                "tanggal": "2026-06-11",
+                "status": "Hadir",
+                "keterangan": "Coba ubah ke Hadir"
+            }
+        ]
+        response = self.client.post(self.batch_url, payload_overwrite, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("status", response.data["errors"])
+
+        # 5. Guru Pengampu can submit batch with existing Sakit/Izin if left unchanged
+        payload_unchanged = [
+            {
+                "siswaId": self.siswa.id,
+                "kelasId": self.kelas.id,
+                "mapelId": self.mapel.id,
+                "tanggal": "2026-06-11",
+                "status": "Sakit",
+                "keterangan": "Sakit disetujui piket"
+            }
+        ]
+        response = self.client.post(self.batch_url, payload_unchanged, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
