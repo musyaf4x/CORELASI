@@ -207,20 +207,27 @@ export const AttendancePage: React.FC = () => {
           status: "Hadir",
           keterangan: "",
         };
-        const isDisabled = true; // Subject teacher cannot edit notes since non-Hadir status is handled by Piket
+        const isPiketOrAdmin = user?.role === "admin" || user?.assignments?.isPiketToday;
+        const isExistingSakitOrIzin = ["Sakit", "Izin"].includes(currentRecord.status);
+        const isDisabled = !isPiketOrAdmin && isExistingSakitOrIzin;
+
         return (
           <input
             type="text"
             id={`ket-${s.id}`}
             value={currentRecord.keterangan}
             disabled={isDisabled}
-            placeholder={
-              currentRecord.status === "Hadir"
-                ? "Tidak ada catatan"
-                : currentRecord.keterangan || "Tidak ada keterangan dari piket"
+            onChange={(e) =>
+              setAttendanceRecords((prev) => ({
+                ...prev,
+                [s.id]: { ...prev[s.id], keterangan: e.target.value },
+              }))
             }
+            placeholder={isDisabled ? "Keterangan dikunci oleh Piket/Admin" : "Tambahkan keterangan..."}
             aria-label={`Keterangan absen untuk ${s.name}`}
-            className="block w-full max-w-xs rounded-[6px] border border-bg-border bg-bg-surface text-bg-ink px-2.5 py-1.5 text-[12px] placeholder:text-bg-ink-muted focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary disabled:opacity-50 disabled:bg-bg-sage-slate/20"
+            className={`block w-full max-w-xs rounded-[6px] border border-bg-border bg-bg-surface text-bg-ink px-2.5 py-1.5 text-[12px] placeholder:text-bg-ink-muted focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary ${
+              isDisabled ? "opacity-50 cursor-not-allowed bg-bg-paper" : ""
+            }`}
           />
         );
       },
