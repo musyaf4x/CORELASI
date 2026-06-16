@@ -61,7 +61,9 @@ export const AttendancePage: React.FC = () => {
       const myLogs = absData.filter((a) => a.siswaId === user.id);
       setLogs(myLogs);
       const classId = getSiswaKelasId(user);
-      const schedulesList = schData.filter((s) => s.kelasId === classId);
+      const schedulesList = schData.filter(
+        (s) => String(s.kelasId) === String(classId),
+      );
       setMySchedules(schedulesList);
 
       if (schedulesList.length > 0) {
