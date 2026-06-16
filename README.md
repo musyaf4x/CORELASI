@@ -19,6 +19,35 @@ CORELASI adalah aplikasi administrasi akademik untuk SMAT Baiturrahman. Reposito
 | `scripts/` | Script operasional project | Tech Lead |
 | `icon/` | Asset branding dan icon aplikasi | UI/UX, Frontend |
 
+## Dokumentasi Setup dan Deployment
+
+Panduan lengkap mengenai instalasi, konfigurasi database, integrasi Docker, serta petunjuk rilis produksi dapat dibaca pada dokumen utama:
+👉 **[Installation and Deployment Guide](file:///docs/setup/INSTALLATION_AND_DEPLOYMENT_GUIDE.md)**
+
+## Quick Start Lokal (SQLite)
+
+### 1. Jalankan Backend
+```bash
+cd corelasi-backend
+python -m venv .venv
+# Aktifkan venv sesuai OS (cth: source .venv/bin/activate)
+pip install -r requirements.txt
+cp .env.example .env
+# Ubah DB_ENGINE=sqlite di dalam .env
+python manage.py migrate
+python manage.py seed_data
+python manage.py runserver
+```
+
+### 2. Jalankan Frontend
+```bash
+cd corelasi-frontend
+npm ci
+cp .env.example .env
+# Pastikan VITE_API_BASE_URL mengarah ke http://localhost:8000/api
+npm run dev
+```
+
 ## Alur Kerja
 
 1. Ambil task dari Jira sesuai sprint dan role.
@@ -34,3 +63,4 @@ CORELASI adalah aplikasi administrasi akademik untuk SMAT Baiturrahman. Reposito
 - Jangan commit dependency lokal seperti `node_modules/` atau `.venv/`.
 - Jangan mengubah file milik role lain tanpa koordinasi di Jira.
 - Gunakan branch per task agar riwayat kontribusi tetap rapi.
+
