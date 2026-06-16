@@ -19,6 +19,7 @@ export const Topbar: React.FC<TopbarProps> = ({ onMenuToggle }) => {
   );
 
   useEffect(() => {
+    if (!user) return;
     const fetchActiveSemester = async () => {
       try {
         const semesters = await academicService.getSemester();
@@ -33,7 +34,7 @@ export const Topbar: React.FC<TopbarProps> = ({ onMenuToggle }) => {
       }
     };
     fetchActiveSemester();
-  }, []);
+  }, [user]);
 
   const getPageTitle = () => {
     const path = location.pathname;
