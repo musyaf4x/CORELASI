@@ -1,7 +1,7 @@
 import React, { Suspense, useState } from "react";
 import { Outlet } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
-import { Topbar } from "./Topbar";
+import { Topbar } from "./TopBar";
 import { X } from "lucide-react";
 import { PageLoadingFallback } from "@/components/shared/PageLoadingFallback";
 
