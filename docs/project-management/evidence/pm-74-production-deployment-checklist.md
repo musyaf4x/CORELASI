@@ -31,7 +31,7 @@ Prior to launching execution steps on the production server, the following prere
 | 8 | Public URL endpoint routing verified. | **Passed** | Tech Lead | Smoke script verified for HTTP routing gates. |
 
 > [!NOTE]
-> **Status**: Ready for deployment preparation. Final execution depends on Sprint 12 release candidate validation.
+> **Status**: Ready for deployment preparation, final execution depends on Sprint 11 integration acceptance.
 
 ---
 
@@ -176,5 +176,6 @@ PM-74 is the foundational Tech Lead checklist. Execution of Sprint 12 depends on
 
 ## 9. Release Readiness Decision
 
-*   **Status**: **Ready for Sprint 12 deployment preparation**
-*   **Notes**: The Sprint 11 integration commits have been successfully merged into `develop`. This checklist is fully aligned with the integrated repository state.
+*   **Status**: **Ready for deployment preparation, final execution depends on Sprint 11 integration acceptance.**
+*   **Notes**: The Sprint 11 integration commits have been merged into `develop`, but a fresh build requires updating dependencies. This checklist is ready for deployment preparation pending final acceptance of Sprint 11 integration.
+
