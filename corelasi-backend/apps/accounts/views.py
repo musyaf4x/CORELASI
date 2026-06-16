@@ -23,7 +23,6 @@ from accounts.cookies import (
     set_refresh_cookie,
 )
 from accounts.models import User, PasswordResetRequest
-from accounts.showcase import is_showcase_account
 from accounts.serializers import (
     CustomTokenObtainPairSerializer, 
     UserDetailSerializer,
@@ -185,12 +184,6 @@ class ChangePasswordView(APIView):
     permission_classes = (IsAuthenticated,)
 
     def post(self, request):
-        if is_showcase_account(request.user):
-            return StandardResponse.error(
-                message="Kata sandi akun showcase tidak dapat diubah.",
-                status_code=status.HTTP_403_FORBIDDEN,
-            )
-
         current_password = request.data.get("currentPassword", "")
         new_password = request.data.get("newPassword", "")
 
@@ -240,15 +233,6 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserDetailSerializer
     permission_classes = [IsAdminOrReadOnly]
 
-    @staticmethod
-    def _showcase_write_forbidden(request):
-        if not is_showcase_account(request.user):
-            return None
-        return StandardResponse.error(
-            message="Akun showcase tidak dapat mengubah data pengguna.",
-            status_code=status.HTTP_403_FORBIDDEN,
-        )
-
     def get_queryset(self):
         return scope_users_for(self.request.user, super().get_queryset())
 
@@ -263,10 +247,6 @@ class UserViewSet(viewsets.ModelViewSet):
         return StandardResponse.success(data=serializer.data)
 
     def create(self, request, *args, **kwargs):
-        forbidden = self._showcase_write_forbidden(request)
-        if forbidden:
-            return forbidden
-
         serializer = self.get_serializer(data=request.data)
         try:
             serializer.is_valid(raise_exception=True)
@@ -285,10 +265,6 @@ class UserViewSet(viewsets.ModelViewSet):
             )
 
     def update(self, request, *args, **kwargs):
-        forbidden = self._showcase_write_forbidden(request)
-        if forbidden:
-            return forbidden
-
         partial = kwargs.pop("partial", False)
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
@@ -308,11 +284,13 @@ class UserViewSet(viewsets.ModelViewSet):
             )
 
     def destroy(self, request, *args, **kwargs):
-        forbidden = self._showcase_write_forbidden(request)
-        if forbidden:
-            return forbidden
-
         instance = self.get_object()
+        if instance.id == request.user.id:
+            return StandardResponse.error(
+                message="Admin tidak dapat menghapus akun sendiri.",
+                status_code=status.HTTP_403_FORBIDDEN,
+            )
+
         try:
             self.perform_destroy(instance)
             return StandardResponse.success(
@@ -379,12 +357,6 @@ class PasswordResetRequestViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["patch"])
     def resolve(self, request, pk=None):
-        if is_showcase_account(request.user):
-            return StandardResponse.error(
-                message="Akun showcase tidak dapat mereset kata sandi.",
-                status_code=status.HTTP_403_FORBIDDEN,
-            )
-
         reset_request = self.get_object()
         if reset_request.status == "resolved":
             return StandardResponse.error(
