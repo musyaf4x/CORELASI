@@ -43,7 +43,7 @@ import {
   UserDetailPage,
   UserFormPage,
   UsersPage,
-} from "@/app/lazyPages";
+} from "@/app/LazyPages";
 
 import { LoginPage } from "@/pages/auth/LoginPage";
 import { Error403Page } from "@/pages/auth/Error403Page";
