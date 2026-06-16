@@ -1,7 +1,7 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AppShell } from "@/components/layout/AppShell";
 import { AssignmentGuard } from "@/components/shared/AssignmentGuard";
-import { RoleLayout } from "@/app/RoleLayout";
+import { RoleLayout } from "@/app/RouteLayout";
 import {
   AcademicPage,
   AdminAttendancePage,
