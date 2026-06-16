@@ -2,29 +2,23 @@ import React, { useEffect, useMemo, useState } from "react";
 import { attendanceService } from "@/services/attendanceService";
 import { academicService } from "@/services/academicService";
 import { userService } from "@/services/userService";
-import type { AbsensiSiswa, StatusKehadiran } from "@/types/attendance";
+import type { AbsensiSiswa, PermintaanKoreksi, StatusKehadiran } from "@/types/attendance";
 import type { Kelas } from "@/types/academic";
-import {
-  DataTable,
-  SummaryMetricCard,
-  LoadingState,
-  FilterBar,
-  StatusBadge,
-  Modal,
-  Select,
-  Button,
+import { 
+  DataTable, 
+  SummaryMetricCard, 
+  LoadingState, 
+  FilterBar, 
+  StatusBadge, 
+  Modal, 
+  Select, 
+  Button, 
   Toast,
-  ErrorState,
+  ErrorState
 } from "@/components/shared";
 import type { SemanticState } from "@/utils/semanticState";
 import { getActiveDateString } from "@/utils/student";
-import {
-  ClipboardCheck,
-  Users,
-  AlertCircle,
-  AlertTriangle,
-  Edit3,
-} from "lucide-react";
+import { ClipboardCheck, Users, AlertCircle, AlertTriangle, Edit3, CheckCircle } from "lucide-react";
 
 interface ClassAttendanceSummary {
   kelasId: string;
@@ -57,7 +51,14 @@ export const AttendancePage: React.FC = () => {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Tab State
-  const [activeTab, setActiveTab] = useState<"rekap" | "monitoring">("rekap");
+  const [activeTab, setActiveTab] = useState<"rekap" | "monitoring" | "koreksi">("rekap");
+
+  // Koreksi Absensi State
+  const [koreksiData, setKoreksiData] = useState<PermintaanKoreksi[]>([]);
+  const [koreksiLoading, setKoreksiLoading] = useState(false);
+  const [koreksiError, setKoreksiError] = useState<string | null>(null);
+  const [editedKoreksiStatuses, setEditedKoreksiStatuses] = useState<Record<string, StatusKehadiran>>({});
+  const [editedKoreksiKets, setEditedKoreksiKets] = useState<Record<string, string>>();
 
   // Log filter states
   const [selectedKelas, setSelectedKelas] = useState("");
@@ -87,19 +88,39 @@ export const AttendancePage: React.FC = () => {
       setStudentClassIds(
         users
           .filter((user) => user.role === "siswa" && user.kelasId)
-          .map((user) => String(user.kelasId)),
+          .map((user) => String(user.kelasId))
       );
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Gagal memuat data absensi.",
-      );
+      setError(err instanceof Error ? err.message : "Gagal memuat data absensi.");
     } finally {
       setLoading(false);
     }
   };
 
+  const fetchKoreksi = async () => {
+    setKoreksiLoading(true);
+    setKoreksiError(null);
+    try {
+      const data = await attendanceService.getPermintaanKoreksi();
+      setKoreksiData(data);
+      const statuses: Record<string, StatusKehadiran> = {};
+      const kets: Record<string, string> = {};
+      data.forEach((r) => {
+        statuses[r.id] = r.statusKoreksi;
+        kets[r.id] = r.keterangan;
+      });
+      setEditedKoreksiStatuses(statuses);
+      setEditedKoreksiKets(kets);
+    } catch (err) {
+      setKoreksiError(err instanceof Error ? err.message : "Gagal memuat data koreksi.");
+    } finally {
+      setKoreksiLoading(false);
+    }
+  };
+
   useEffect(() => {
     void Promise.resolve().then(fetchData);
+    void Promise.resolve().then(fetchKoreksi);
   }, []);
 
   const summaryList = useMemo(() => {
@@ -107,10 +128,8 @@ export const AttendancePage: React.FC = () => {
     const dateLogs = attendanceData.filter((a) => a.tanggal === tanggal);
 
     const summaries: ClassAttendanceSummary[] = classes.map((c) => {
-      const classLogs = dateLogs.filter(
-        (a) => String(a.kelasId) === String(c.id),
-      );
-
+      const classLogs = dateLogs.filter((a) => String(a.kelasId) === String(c.id));
+      
       const studentStatusMap = new Map<string, StatusKehadiran>();
       classLogs.forEach((log) => {
         const current = studentStatusMap.get(log.siswaId);
@@ -120,7 +139,7 @@ export const AttendancePage: React.FC = () => {
       });
 
       const totalSiswa = studentClassIds.filter(
-        (kelasId) => kelasId === String(c.id),
+        (kelasId) => kelasId === String(c.id)
       ).length;
       let hadir = 0;
       let sakit = 0;
@@ -134,8 +153,7 @@ export const AttendancePage: React.FC = () => {
         else if (status === "Alpa") alpa++;
       });
 
-      const percentage =
-        totalSiswa > 0 ? Math.round((hadir / totalSiswa) * 100) : 0;
+      const percentage = totalSiswa > 0 ? Math.round((hadir / totalSiswa) * 100) : 0;
 
       return {
         kelasId: c.id,
@@ -162,27 +180,22 @@ export const AttendancePage: React.FC = () => {
   }, [summaryList, search]);
 
   // Overall Statistics
-  const totalStudents = summaryList.reduce(
-    (acc, curr) => acc + curr.totalSiswa,
-    0,
-  );
+  const totalStudents = summaryList.reduce((acc, curr) => acc + curr.totalSiswa, 0);
   const totalHadir = summaryList.reduce((acc, curr) => acc + curr.hadir, 0);
   const totalAlpa = summaryList.reduce((acc, curr) => acc + curr.alpa, 0);
-  const averagePercentage =
-    totalStudents > 0 ? Math.round((totalHadir / totalStudents) * 100) : 0;
+  const averagePercentage = totalStudents > 0 ? Math.round((totalHadir / totalStudents) * 100) : 0;
 
   // Filtered student logs
   const filteredLogs = attendanceData.filter((log) => {
     // Match date
     if (log.tanggal !== tanggal) return false;
-
+    
     // Match kelas
-    if (selectedKelas && String(log.kelasId) !== String(selectedKelas))
-      return false;
-
+    if (selectedKelas && String(log.kelasId) !== String(selectedKelas)) return false;
+    
     // Match status
     if (selectedStatus && log.status !== selectedStatus) return false;
-
+    
     // Match search query (student name or NIS)
     if (studentSearch.trim() !== "") {
       const q = studentSearch.toLowerCase();
@@ -190,7 +203,7 @@ export const AttendancePage: React.FC = () => {
       const nisMatch = log.nis && log.nis.includes(q);
       if (!nameMatch && !nisMatch) return false;
     }
-
+    
     return true;
   });
 
@@ -220,18 +233,14 @@ export const AttendancePage: React.FC = () => {
       await attendanceService.overrideAbsensiSiswa(
         selectedLog.id,
         statusBaru,
-        alasanOverride.trim(),
+        alasanOverride.trim()
       );
       await fetchData();
       setIsOverrideModalOpen(false);
-      setToastMessage(
-        `Berhasil override kehadiran ${selectedLog.siswaName} menjadi ${statusBaru}!`,
-      );
+      setToastMessage(`Berhasil override kehadiran ${selectedLog.siswaName} menjadi ${statusBaru}!`);
     } catch (err: unknown) {
       setOverrideError(
-        err instanceof Error
-          ? err.message
-          : "Gagal melakukan override absensi.",
+        err instanceof Error ? err.message : "Gagal melakukan override absensi."
       );
     } finally {
       setIsOverriding(false);
@@ -242,41 +251,31 @@ export const AttendancePage: React.FC = () => {
     {
       header: "Nama Kelas",
       cell: (s: ClassAttendanceSummary) => (
-        <span className="text-[13px] font-semibold text-bg-ink">
-          {s.kelasName}
-        </span>
+        <span className="text-[13px] font-semibold text-bg-ink">{s.kelasName}</span>
       ),
     },
     {
       header: "Total Siswa",
       cell: (s: ClassAttendanceSummary) => (
-        <span className="text-[13px] font-medium text-bg-ink-secondary">
-          {s.totalSiswa} Siswa
-        </span>
+        <span className="text-[13px] font-medium text-bg-ink-secondary">{s.totalSiswa} Siswa</span>
       ),
     },
     {
       header: "Hadir",
       cell: (s: ClassAttendanceSummary) => (
-        <span className="text-[13px] font-semibold text-primary">
-          {s.hadir}
-        </span>
+        <span className="text-[13px] font-semibold text-primary">{s.hadir}</span>
       ),
     },
     {
       header: "Sakit / Izin",
       cell: (s: ClassAttendanceSummary) => (
-        <span className="text-[13px] font-medium text-bg-ink-secondary">
-          {s.sakit + s.izin}
-        </span>
+        <span className="text-[13px] font-medium text-bg-ink-secondary">{s.sakit + s.izin}</span>
       ),
     },
     {
       header: "Alpa",
       cell: (s: ClassAttendanceSummary) => (
-        <span
-          className={`text-[13px] font-semibold ${s.alpa > 0 ? "text-status-danger" : "text-bg-ink-muted"}`}
-        >
+        <span className={`text-[13px] font-semibold ${s.alpa > 0 ? "text-status-danger" : "text-bg-ink-muted"}`}>
           {s.alpa}
         </span>
       ),
@@ -289,7 +288,11 @@ export const AttendancePage: React.FC = () => {
         else if (s.percentage < 95) state = "warning";
 
         return (
-          <StatusBadge label={`${s.percentage}%`} state={state} size="xs" />
+          <StatusBadge
+            label={`${s.percentage}%`}
+            state={state}
+            size="xs"
+          />
         );
       },
     },
@@ -300,32 +303,22 @@ export const AttendancePage: React.FC = () => {
       header: "Tanggal / Sesi",
       cell: (log: AbsensiSiswa) => (
         <div className="flex flex-col">
-          <span className="text-[13px] font-semibold text-bg-ink">
-            {formatTanggal(log.tanggal)}
-          </span>
-          {log.mapelName && (
-            <span className="text-[10px] text-bg-ink-muted">
-              {log.mapelName}
-            </span>
-          )}
+          <span className="text-[13px] font-semibold text-bg-ink">{formatTanggal(log.tanggal)}</span>
+          {log.mapelName && <span className="text-[10px] text-bg-ink-muted">{log.mapelName}</span>}
         </div>
       ),
     },
     {
       header: "Kelas",
       cell: (log: AbsensiSiswa) => (
-        <span className="text-[13px] font-medium text-bg-ink-secondary">
-          {log.kelasName}
-        </span>
+        <span className="text-[13px] font-medium text-bg-ink-secondary">{log.kelasName}</span>
       ),
     },
     {
       header: "Nama Siswa",
       cell: (log: AbsensiSiswa) => (
         <div className="flex flex-col">
-          <span className="text-[13px] font-semibold text-bg-ink">
-            {log.siswaName}
-          </span>
+          <span className="text-[13px] font-semibold text-bg-ink">{log.siswaName}</span>
           <span className="text-[10px] text-bg-ink-muted">NIS: {log.nis}</span>
         </div>
       ),
@@ -333,19 +326,19 @@ export const AttendancePage: React.FC = () => {
     {
       header: "Status Awal",
       cell: (log: AbsensiSiswa) => {
-        if (!log.statusAwal)
-          return (
-            <span className="text-[13px] text-bg-ink-muted/70 italic">
-              Sama
-            </span>
-          );
-
+        if (!log.statusAwal) return <span className="text-[13px] text-bg-ink-muted/70 italic">Sama</span>;
+        
         let state: SemanticState = "safe";
         if (log.statusAwal === "Alpa") state = "danger";
-        else if (log.statusAwal === "Sakit" || log.statusAwal === "Izin")
-          state = "warning";
-
-        return <StatusBadge label={log.statusAwal} state={state} size="xs" />;
+        else if (log.statusAwal === "Sakit" || log.statusAwal === "Izin") state = "warning";
+        
+        return (
+          <StatusBadge
+             label={log.statusAwal}
+             state={state}
+             size="xs"
+          />
+        );
       },
     },
     {
@@ -353,19 +346,21 @@ export const AttendancePage: React.FC = () => {
       cell: (log: AbsensiSiswa) => {
         let state: SemanticState = "safe";
         if (log.status === "Alpa") state = "danger";
-        else if (log.status === "Sakit" || log.status === "Izin")
-          state = "warning";
-
-        return <StatusBadge label={log.status} state={state} size="xs" />;
+        else if (log.status === "Sakit" || log.status === "Izin") state = "warning";
+        
+        return (
+          <StatusBadge
+            label={log.status}
+            state={state}
+            size="xs"
+          />
+        );
       },
     },
     {
       header: "Catatan",
       cell: (log: AbsensiSiswa) => (
-        <span
-          className="text-[13px] text-bg-ink-secondary block max-w-xs truncate"
-          title={log.keterangan || ""}
-        >
+        <span className="text-[13px] text-bg-ink-secondary block max-w-xs truncate" title={log.keterangan || ""}>
           {log.keterangan || "—"}
         </span>
       ),
@@ -406,14 +401,14 @@ export const AttendancePage: React.FC = () => {
           Monitoring Absensi
         </h1>
         <p className="mt-1 text-[13px] text-bg-ink-secondary leading-snug">
-          {activeTab === "rekap"
+          {activeTab === "rekap" 
             ? "Rekapitulasi persentase kehadiran harian siswa di seluruh kelas."
             : "Wewenang khusus untuk mengubah status kehadiran siswa dalam kondisi urgensi administratif."}
         </p>
       </div>
 
       {/* Tabs */}
-      <div
+      <div 
         className="flex border-b border-bg-border gap-2"
         role="tablist"
         aria-label="Navigasi Monitoring Kehadiran"
@@ -448,6 +443,26 @@ export const AttendancePage: React.FC = () => {
         >
           Log Kehadiran Siswa
         </button>
+        <button
+          role="tab"
+          id="tab-koreksi"
+          aria-selected={activeTab === "koreksi"}
+          aria-controls="panel-koreksi"
+          tabIndex={activeTab === "koreksi" ? 0 : -1}
+          onClick={() => setActiveTab("koreksi")}
+          className={`px-4 py-2 text-[13px] font-semibold border-b-2 transition-all focus:outline-none cursor-pointer ${
+            activeTab === "koreksi"
+              ? "border-primary text-primary"
+              : "border-transparent text-bg-ink-secondary hover:text-bg-ink"
+          }`}
+        >
+          Koreksi Absensi
+          {koreksiData.filter((r) => !r.verified).length > 0 && (
+            <span className="ml-1.5 inline-flex items-center justify-center w-4 h-4 text-[10px] font-bold bg-status-danger text-white rounded-full">
+              {koreksiData.filter((r) => !r.verified).length}
+            </span>
+          )}
+        </button>
       </div>
 
       {/* Summary Stats Cards */}
@@ -457,13 +472,7 @@ export const AttendancePage: React.FC = () => {
           value={`${averagePercentage}%`}
           desc={`Tanggal ${formatTanggal(tanggal)}`}
           icon={<ClipboardCheck className="h-4 w-4" />}
-          variant={
-            averagePercentage >= 95
-              ? "safe"
-              : averagePercentage >= 75
-                ? "warning"
-                : "danger"
-          }
+          variant={averagePercentage >= 95 ? "safe" : averagePercentage >= 75 ? "warning" : "danger"}
           tooltip="Persentase total kehadiran siswa yang masuk sekolah hari ini."
         />
         <SummaryMetricCard
@@ -527,7 +536,7 @@ export const AttendancePage: React.FC = () => {
             />
           )}
         </div>
-      ) : (
+      ) : activeTab === "monitoring" ? (
         <div
           role="tabpanel"
           id="panel-monitoring"
@@ -618,6 +627,130 @@ export const AttendancePage: React.FC = () => {
             />
           )}
         </div>
+      ) : (
+        // Tab: Koreksi Absensi
+        <div
+          role="tabpanel"
+          id="panel-koreksi"
+          aria-labelledby="tab-koreksi"
+          tabIndex={0}
+          className="space-y-6 focus:outline-none"
+        >
+          {koreksiLoading ? (
+            <LoadingState message="Memuat permintaan koreksi..." />
+          ) : koreksiError ? (
+            <ErrorState message={koreksiError} onRetry={fetchKoreksi} />
+          ) : (
+            <DataTable
+              title="Permintaan Koreksi Kehadiran Siswa"
+              columns={[
+                {
+                  header: "Siswa",
+                  cell: (req: PermintaanKoreksi) => (
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[13px] font-semibold text-bg-ink">{req.siswaName}</span>
+                      <span className="text-[11px] text-bg-ink-muted">{req.tanggal} · {req.kelasName}</span>
+                    </div>
+                  ),
+                },
+                {
+                  header: "Mapel",
+                  cell: (req: PermintaanKoreksi) => (
+                    <span className="text-[13px] text-bg-ink-secondary">{req.mapelName}</span>
+                  ),
+                },
+                {
+                  header: "Status Semula",
+                  cell: (req: PermintaanKoreksi) => (
+                    <StatusBadge
+                      label={req.statusSemula}
+                      state={req.statusSemula === "Hadir" ? "safe" : req.statusSemula === "Alpa" ? "danger" : "warning"}
+                      size="xs"
+                    />
+                  ),
+                },
+                {
+                  header: "Koreksi Usulan",
+                  cell: (req: PermintaanKoreksi) => {
+                    if (req.verified) {
+                      return (
+                        <StatusBadge
+                          label={req.statusKoreksi}
+                          state={req.statusKoreksi === "Hadir" ? "safe" : req.statusKoreksi === "Alpa" ? "danger" : "warning"}
+                          size="xs"
+                        />
+                      );
+                    }
+                    return (
+                      <Select
+                        value={editedKoreksiStatuses[req.id] || req.statusKoreksi}
+                        onChange={(e) =>
+                          setEditedKoreksiStatuses((prev) => ({
+                            ...prev,
+                            [req.id]: e.target.value as StatusKehadiran,
+                          }))
+                        }
+                        className="py-1 px-2 h-8 text-[12px] w-[110px]"
+                      >
+                        <option value="Hadir">Hadir</option>
+                        <option value="Sakit">Sakit</option>
+                        <option value="Izin">Izin</option>
+                        <option value="Alpa">Alpa</option>
+                      </Select>
+                    );
+                  },
+                },
+                {
+                  header: "Alasan Siswa",
+                  cell: (req: PermintaanKoreksi) => (
+                    <span className="text-[13px] text-bg-ink-secondary max-w-[200px] block truncate" title={req.keterangan}>
+                      {req.keterangan || "-"}
+                    </span>
+                  ),
+                },
+                {
+                  header: "Status",
+                  cell: (req: PermintaanKoreksi) => {
+                    if (req.verified) {
+                      return <StatusBadge label="Terverifikasi" state="safe" size="xs" />;
+                    }
+                    return (
+                      <Button
+                        size="sm"
+                        className="h-8 py-1 text-[12px] gap-1"
+                        onClick={async () => {
+                          try {
+                            const statusVal = editedKoreksiStatuses[req.id] || req.statusKoreksi;
+                            const ketVal = editedKoreksiKets?.[req.id] || req.keterangan;
+                            await attendanceService.verifyPermintaanKoreksi(req.id, statusVal, ketVal);
+                            setToastMessage(`Koreksi absensi ${req.siswaName} berhasil diverifikasi.`);
+                            await fetchKoreksi();
+                          } catch {
+                            setToastMessage("Gagal memverifikasi koreksi absensi.");
+                          }
+                        }}
+                        aria-label={`Verifikasi koreksi absensi ${req.siswaName}`}
+                      >
+                        <CheckCircle className="h-3 w-3" />
+                        Verifikasi
+                      </Button>
+                    );
+                  },
+                },
+              ]}
+              data={koreksiData}
+              keyExtractor={(req) => req.id}
+              emptyStateTitle="Tidak ada permintaan koreksi"
+              emptyStateDescription="Belum ada siswa yang mengajukan permintaan koreksi absensi."
+              actions={
+                <div className="flex items-center gap-1.5 text-bg-ink-muted text-xs">
+                  <AlertCircle className="h-4 w-4 text-status-warning" />
+                  <span>Verifikasi akan langsung memperbarui status presensi utama siswa.</span>
+                </div>
+              }
+            />
+          )}
+        </div>
       )}
 
       {/* Form Override Modal */}
@@ -641,8 +774,7 @@ export const AttendancePage: React.FC = () => {
             <div className="rounded-[6px] bg-status-warning/[0.06] p-3.5 text-[13px] text-amber-900 border border-status-warning/20 flex gap-2 items-start">
               <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-status-warning" />
               <span className="font-semibold leading-snug">
-                Peringatan: Override administratif hanya digunakan untuk kondisi
-                khusus.
+                Peringatan: Override administratif hanya digunakan untuk kondisi khusus.
               </span>
             </div>
 
@@ -650,35 +782,23 @@ export const AttendancePage: React.FC = () => {
             <div className="divide-y divide-bg-border/40 text-[13px] border-b border-bg-border/40 pb-1">
               <div className="flex justify-between py-2">
                 <span className="text-bg-ink-secondary">Nama Siswa</span>
-                <span className="font-semibold text-bg-ink">
-                  {selectedLog.siswaName}
-                </span>
+                <span className="font-semibold text-bg-ink">{selectedLog.siswaName}</span>
               </div>
               <div className="flex justify-between py-2">
                 <span className="text-bg-ink-secondary">Kelas</span>
-                <span className="font-semibold text-bg-ink">
-                  {selectedLog.kelasName}
-                </span>
+                <span className="font-semibold text-bg-ink">{selectedLog.kelasName}</span>
               </div>
               {selectedLog.mapelName && (
                 <div className="flex justify-between py-2">
                   <span className="text-bg-ink-secondary">Mata Pelajaran</span>
-                  <span className="font-semibold text-bg-ink">
-                    {selectedLog.mapelName}
-                  </span>
+                  <span className="font-semibold text-bg-ink">{selectedLog.mapelName}</span>
                 </div>
               )}
               <div className="flex justify-between items-center py-2">
                 <span className="text-bg-ink-secondary">Status Saat Ini</span>
                 <StatusBadge
                   label={selectedLog.status}
-                  state={
-                    selectedLog.status === "Hadir"
-                      ? "safe"
-                      : selectedLog.status === "Alpa"
-                        ? "danger"
-                        : "warning"
-                  }
+                  state={selectedLog.status === "Hadir" ? "safe" : selectedLog.status === "Alpa" ? "danger" : "warning"}
                   size="xs"
                 />
               </div>
@@ -686,18 +806,13 @@ export const AttendancePage: React.FC = () => {
 
             {/* Status Baru Select */}
             <div>
-              <label
-                htmlFor="override-status"
-                className="block text-[13px] font-semibold text-bg-ink-secondary mb-1.5 font-sans"
-              >
+              <label htmlFor="override-status" className="block text-[13px] font-semibold text-bg-ink-secondary mb-1.5 font-sans">
                 Status Kehadiran Baru
               </label>
               <Select
                 id="override-status"
                 value={statusBaru}
-                onChange={(e) =>
-                  setStatusBaru(e.target.value as StatusKehadiran)
-                }
+                onChange={(e) => setStatusBaru(e.target.value as StatusKehadiran)}
               >
                 <option value="Hadir">Hadir</option>
                 <option value="Sakit">Sakit</option>
@@ -708,10 +823,7 @@ export const AttendancePage: React.FC = () => {
 
             {/* Alasan Override textarea */}
             <div>
-              <label
-                htmlFor="override-reason"
-                className="block text-[13px] font-semibold text-bg-ink-secondary mb-1.5 font-sans"
-              >
+              <label htmlFor="override-reason" className="block text-[13px] font-semibold text-bg-ink-secondary mb-1.5 font-sans">
                 Alasan Override
               </label>
               <textarea

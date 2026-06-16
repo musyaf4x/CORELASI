@@ -2,6 +2,9 @@ import { test, expect } from "@playwright/test";
 
 test.describe("CORELASI Attendance Workflow E2E", () => {
   test("should complete the entire attendance workflow (Guru -> Siswa -> Admin)", async ({ page }) => {
+    page.on('console', msg => console.log('BROWSER CONSOLE:', msg.text()));
+    page.on('pageerror', err => console.log('BROWSER ERROR:', err.message));
+
     // ----------------------------------------------------
     // PART 1: GURU INPUT ATTENDANCE (TC-ATT-001)
     // ----------------------------------------------------

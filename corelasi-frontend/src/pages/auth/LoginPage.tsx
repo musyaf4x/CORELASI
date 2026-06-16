@@ -58,10 +58,11 @@ export const LoginPage: React.FC = () => {
     setSubmitError(null);
     try {
       const user = await login(data.email, data.password);
-      if (from === "/") {
-        navigate(`/${user.role}/dashboard`, { replace: true });
-      } else {
+      const isCompatiblePath = from.startsWith(`/${user.role}/`);
+      if (isCompatiblePath) {
         navigate(from, { replace: true });
+      } else {
+        navigate(`/${user.role}/dashboard`, { replace: true });
       }
     } catch (error: unknown) {
       setSubmitError(getErrorMessage(error, "Gagal masuk. Coba lagi."));
@@ -91,8 +92,9 @@ export const LoginPage: React.FC = () => {
     setDemoSubmittingEmail(email);
     try {
       const user = await showcaseLogin(email);
+      const isCompatiblePath = from.startsWith(`/${user.role}/`);
       navigate(
-        from === "/" ? `/${user.role}/dashboard` : from,
+        isCompatiblePath ? from : `/${user.role}/dashboard`,
         { replace: true },
       );
     } catch (error: unknown) {
