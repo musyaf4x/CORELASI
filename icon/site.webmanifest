@@ -1,0 +1,25 @@
+{
+  "name": "CORELASI - Sistem Administrasi Akademik Terpadu",
+  "short_name": "CORELASI",
+  "description": "Platform terpadu untuk administrasi akademik, pembelajaran, absensi, dan pelaporan sekolah.",
+  "lang": "id",
+  "start_url": "/login",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/web-app-manifest-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/web-app-manifest-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "theme_color": "#0f5132",
+  "background_color": "#f7f8f6",
+  "display": "standalone"
+}

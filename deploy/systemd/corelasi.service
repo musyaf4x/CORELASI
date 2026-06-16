@@ -1,0 +1,16 @@
+[Unit]
+Description=CORELASI production containers
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=__CORELASI_ROOT__
+ExecStart=/usr/bin/docker compose --file docker-compose.production.yml up --detach --remove-orphans
+ExecStop=/usr/bin/docker compose --file docker-compose.production.yml stop
+TimeoutStartSec=180
+TimeoutStopSec=90
+
+[Install]
+WantedBy=default.target

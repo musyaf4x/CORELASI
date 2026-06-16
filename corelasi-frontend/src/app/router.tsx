@@ -59,14 +59,12 @@ export const router = createBrowserRouter([
   },
   {
     path: "/",
+    element: <Navigate to="/login" replace />,
+  },
+  {
+    path: "/",
     element: <AppShell />,
     children: [
-      // Default landing redirect
-      {
-        index: true,
-        element: <Navigate to="/login" replace />,
-      },
-
       // Admin Routes
       {
         path: "admin",

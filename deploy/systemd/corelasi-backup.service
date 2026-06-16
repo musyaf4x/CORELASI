@@ -1,0 +1,9 @@
+[Unit]
+Description=CORELASI verified production backup
+After=corelasi.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=__CORELASI_ROOT__
+Environment=RETENTION_DAYS=14
+ExecStart=__CORELASI_ROOT__/scripts/backup-production.sh

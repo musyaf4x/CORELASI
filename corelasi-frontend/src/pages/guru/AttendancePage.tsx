@@ -168,24 +168,24 @@ export const AttendancePage: React.FC = () => {
             {(["Hadir", "Sakit", "Izin", "Alpa"] as StatusKehadiran[]).map(
               (st) => {
                 const isActive = currentRecord.status === st;
-                const isHadir = st === "Hadir";
+                const isAllowed = st === "Hadir" || st === "Alpa";
 
                 const buttonStyles = isActive
                   ? st === "Hadir"
                     ? "bg-primary text-white border-primary cursor-pointer"
-                    : st === "Sakit"
-                      ? "bg-status-info text-white border-status-info cursor-not-allowed opacity-80"
-                      : st === "Izin"
-                        ? "bg-status-warning text-white border-status-warning cursor-not-allowed opacity-80"
-                        : "bg-status-danger text-white border-status-danger cursor-not-allowed opacity-80"
-                  : isHadir
+                    : st === "Alpa"
+                      ? "bg-status-danger text-white border-status-danger cursor-pointer"
+                      : st === "Sakit"
+                        ? "bg-status-info text-white border-status-info cursor-not-allowed opacity-80"
+                        : "bg-status-warning text-white border-status-warning cursor-not-allowed opacity-80"
+                  : isAllowed
                     ? "bg-bg-surface hover:bg-bg-sage-slate text-bg-ink-secondary border-bg-border cursor-pointer"
                     : "bg-bg-sage-slate/40 text-bg-ink-muted/50 border-bg-border/30 cursor-not-allowed";
 
                 return (
                   <button
                     key={st}
-                    disabled={!isHadir}
+                    disabled={!isAllowed}
                     onClick={() => handleStatusChange(s.id, st)}
                     aria-pressed={isActive}
                     aria-label={`Tandai ${s.name} ${st}`}

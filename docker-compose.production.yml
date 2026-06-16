@@ -1,0 +1,94 @@
+name: corelasi-production
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: corelasi-prod-postgres
+    restart: unless-stopped
+    env_file:
+      - ./deploy/runtime/postgres.env
+    volumes:
+      - corelasi_prod_postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 2g
+    cpus: 2.0
+    logging: *default-logging
+
+  backend:
+    build:
+      context: .
+      dockerfile: deploy/docker/backend.Dockerfile
+    image: corelasi/backend:local
+    container_name: corelasi-prod-backend
+    restart: unless-stopped
+    env_file:
+      - ./deploy/runtime/backend.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    expose:
+      - "8000"
+    volumes:
+      - ./runtime/logs:/app/logs
+      - ./runtime/media:/app/media
+      - ./runtime/staticfiles:/app/staticfiles
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 1g
+    cpus: 2.0
+    logging: *default-logging
+
+  web:
+    build:
+      context: .
+      dockerfile: deploy/docker/frontend.Dockerfile
+      args:
+        VITE_API_BASE_URL: /api
+        VITE_ENABLE_DEMO_LOGIN: "true"
+    image: corelasi/web:local
+    container_name: corelasi-prod-web
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - ./runtime/media:/srv/media:ro
+    read_only: true
+    tmpfs:
+      - /data:size=32m,mode=0700
+      - /config:size=8m,mode=0700
+      - /tmp:size=16m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 256m
+    cpus: 1.0
+    logging: *default-logging
+
+volumes:
+  corelasi_prod_postgres_data:
+    name: corelasi_prod_postgres_data
