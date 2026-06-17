@@ -8,9 +8,9 @@ The primary production target is Ubuntu 24.04 on WSL2:
 - Django and Waitress run in an isolated backend container.
 - Caddy serves the React build and proxies API traffic on
   `127.0.0.1:8080`.
-- Cloudflare Tunnel publishes `https://app.corelasi.my.id` without opening an
+- Cloudflare Tunnel (or another reverse proxy/ingress) publishes the public domain (e.g., `https://app.your-domain.example`) without opening an
   inbound port on the Windows or Ubuntu host.
-- Tailscale Serve terminates tailnet HTTPS and forwards to the loopback Caddy
+- Tailscale Serve (or another private network mechanism) terminates tailnet HTTPS and forwards to the loopback Caddy
   endpoint as the private fallback.
 - Docker restart policies and a user systemd service recover the stack after
   the Ubuntu distribution starts.
@@ -25,9 +25,9 @@ Create `deploy/runtime/backend.env`:
 ```dotenv
 DEBUG=False
 SECRET_KEY=<unique-random-secret-at-least-50-characters>
-ALLOWED_HOSTS=app.corelasi.my.id,desktop-0e2e0e5-1.tail320122.ts.net,localhost,127.0.0.1,backend
-CORS_ALLOWED_ORIGINS=https://app.corelasi.my.id,https://desktop-0e2e0e5-1.tail320122.ts.net
-CSRF_TRUSTED_ORIGINS=https://app.corelasi.my.id,https://desktop-0e2e0e5-1.tail320122.ts.net
+ALLOWED_HOSTS=app.your-domain.example,<your-private-network-hostname>,localhost,127.0.0.1,backend
+CORS_ALLOWED_ORIGINS=https://app.your-domain.example,https://<your-private-network-hostname>
+CSRF_TRUSTED_ORIGINS=https://app.your-domain.example,https://<your-private-network-hostname>
 CORS_ALLOW_CREDENTIALS=True
 AUTH_REFRESH_COOKIE_NAME=corelasi_refresh
 AUTH_REFRESH_COOKIE_MAX_AGE=604800
@@ -103,16 +103,16 @@ docker run -d \
 Configure its published application route:
 
 ```text
-Hostname: app.corelasi.my.id
+Hostname: app.your-domain.example
 Service:  http://127.0.0.1:8080
 ```
 
 Verify:
 
 ```bash
-scripts/smoke-production.sh https://app.corelasi.my.id
+scripts/smoke-production.sh https://app.your-domain.example
 scripts/smoke-production.sh \
-  https://desktop-0e2e0e5-1.tail320122.ts.net
+  https://<your-private-network-hostname>
 docker compose --file docker-compose.production.yml ps
 docker inspect corelasi-cloudflared \
   --format '{{.State.Status}} {{.HostConfig.RestartPolicy.Name}}'

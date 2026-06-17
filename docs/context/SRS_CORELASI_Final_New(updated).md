@@ -10,8 +10,8 @@
 | Status | Diselaraskan dengan kondisi implementasi dan production demo |
 | Tanggal Baseline | 14 Juni 2026 |
 | Target Pengguna | Admin, Guru, Siswa, dan Operator Superuser |
-| URL Production Demo | `https://app.corelasi.my.id` |
-| URL Fallback Privat | `https://desktop-0e2e0e5-1.tail320122.ts.net` |
+| URL Production Demo | `https://app.your-domain.example` |
+| URL Fallback Privat | `https://<your-private-network-hostname>` |
 | Sumber Penyelarasan | Codebase CORELASI-1, production runbook, handoff Codex, dan laporan pengujian |
 
 ## Riwayat Revisi
@@ -50,7 +50,7 @@ Ruang lingkup versi saat ini meliputi:
 | Pembelajaran | Materi, tugas, upload file, pengumpulan tugas siswa, penilaian tugas, dan input nilai manual. |
 | Jurnal | Jurnal pertemuan guru dan pemantauan jurnal oleh admin. |
 | Laporan | Laporan absensi, laporan nilai, laporan operasional, laporan kelas, laporan wali kelas, dan laporan piket. |
-| Deployment | Production demo di `app.corelasi.my.id`, fallback Tailscale, PostgreSQL Docker, backend Django/Waitress, frontend React melalui Caddy, dan Cloudflare Tunnel. |
+| Deployment | Production demo di `app.your-domain.example`, fallback jaringan privat, PostgreSQL Docker, backend Django/Waitress, frontend React melalui Caddy, dan Cloudflare Tunnel. |
 
 Di luar lingkup versi ini:
 
@@ -80,7 +80,7 @@ Di luar lingkup versi ini:
 | CORS | Cross-Origin Resource Sharing, konfigurasi origin yang diizinkan mengakses API. |
 | HSTS | HTTP Strict Transport Security, kebijakan browser untuk memaksa HTTPS. |
 | Caddy | Web server/reverse proxy yang menyajikan React build dan meneruskan API ke backend. |
-| Cloudflare Tunnel | Jalur publik `app.corelasi.my.id` tanpa membuka inbound port di host. |
+| Cloudflare Tunnel | Jalur publik `app.your-domain.example` tanpa membuka inbound port di host. |
 | Tailscale Serve | Fallback HTTPS privat di dalam tailnet. |
 | PostgreSQL | Database relasional production. |
 | DRF | Django REST Framework untuk API backend. |
@@ -117,7 +117,7 @@ Arsitektur production demo:
 
 ```text
 Browser
-  -> HTTPS app.corelasi.my.id
+  -> HTTPS app.your-domain.example
   -> Cloudflare Tunnel
   -> Ubuntu 24.04 WSL2 host
   -> Caddy on 127.0.0.1:8080
@@ -130,7 +130,7 @@ Fallback privat menggunakan Tailscale Serve:
 
 ```text
 Browser tailnet
-  -> https://desktop-0e2e0e5-1.tail320122.ts.net
+  -> https://<your-private-network-hostname>
   -> Tailscale Serve
   -> Caddy 127.0.0.1:8080
 ```
@@ -143,7 +143,7 @@ Komponen utama:
 | Backend API | Django, Django REST Framework, Simple JWT, Waitress | Autentikasi, otorisasi, validasi, CRUD domain, upload, laporan, health check, throttling, dan logging. |
 | Database | PostgreSQL 16 | Penyimpanan data pengguna, akademik, absensi, pembelajaran, jurnal, dan nilai. |
 | Reverse proxy | Caddy | Static file serving, API proxy, HTTPS policy, HSTS, dan CSP. |
-| Tunnel publik | Cloudflare Tunnel | Publikasi `app.corelasi.my.id` tanpa inbound port langsung. |
+| Tunnel publik | Cloudflare Tunnel | Publikasi `app.your-domain.example` tanpa inbound port langsung. |
 | Fallback privat | Tailscale Serve | Akses tailnet jika jalur publik perlu fallback. |
 | Operasional | Docker Compose, systemd user service, backup scripts | Restart otomatis, deployment release, backup, restore, dan smoke test. |
 
@@ -166,8 +166,8 @@ Komponen utama:
 | Database | PostgreSQL 16 container, tidak dipublikasikan ke host/public port |
 | Backend | Django/DRF pada Waitress container |
 | Frontend/proxy | Caddy container, bind ke `127.0.0.1:8080` |
-| Domain publik | `https://app.corelasi.my.id` via Cloudflare Tunnel |
-| Fallback privat | `https://desktop-0e2e0e5-1.tail320122.ts.net` via Tailscale Serve |
+| Domain publik | `https://app.your-domain.example` via Cloudflare Tunnel |
+| Fallback privat | `https://<your-private-network-hostname>` via Tailscale Serve |
 | Process recovery | Docker restart policy dan user systemd service |
 | Recovery host | Windows Scheduled Task `Start WSL` untuk menyalakan distribusi Ubuntu |
 
@@ -200,7 +200,7 @@ Aplikasi ditargetkan untuk browser modern berbasis Chromium atau browser modern 
 | Asumsi | Dampak |
 | --- | --- |
 | Production demo dijalankan di host yang sama dengan setup saat ini. | Runbook dan path deployment mengacu pada Ubuntu WSL2 target. |
-| Domain `corelasi.my.id` dan route `app.corelasi.my.id` aktif. | Akses publik bergantung pada DNS dan Cloudflare Tunnel. |
+| Domain `your-domain.example` dan route `app.your-domain.example` aktif. | Akses publik bergantung pada DNS dan Cloudflare Tunnel. |
 | Tailscale peer tetap aktif. | Fallback privat bergantung pada tailnet. |
 | Docker, systemd user service, dan scheduled task Windows berfungsi. | Recovery otomatis setelah reboot bergantung pada komponen tersebut. |
 | Akun showcase tersedia dan datanya dapat di-seed. | Demo cepat membutuhkan akun admin/guru/siswa khusus. |

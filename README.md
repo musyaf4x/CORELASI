@@ -24,6 +24,9 @@ CORELASI adalah aplikasi administrasi akademik untuk SMAT Baiturrahman. Reposito
 Panduan lengkap mengenai instalasi, konfigurasi database, integrasi Docker, serta petunjuk rilis produksi dapat dibaca pada dokumen utama:
 👉 **[Installation and Deployment Guide](file:///docs/setup/INSTALLATION_AND_DEPLOYMENT_GUIDE.md)**
 
+Untuk konfigurasi perutean domain kustom, DNS, TLS/HTTPS, dan setup lingkungan produksi mandiri:
+👉 **[Production Domain Configuration Guide](file:///docs/setup/PRODUCTION_DOMAIN_CONFIGURATION.md)**
+
 ## Quick Start Lokal (SQLite)
 
 ### 1. Jalankan Backend

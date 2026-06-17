@@ -9,8 +9,11 @@ This document serves as the official operator guide and demo script for CORELASI
 - **Sprint**: Sprint 13 - Final Release and Demo Readiness
 - **Owner**: Hafidz Musyafa Azmi (Tech Lead)
 - **Branch**: `docs/s13-demo-guide`
-- **Target Application URL**: `https://app.corelasi.my.id`
-- **Fallback URL**: `https://desktop-0e2e0e5-1.tail320122.ts.net`
+- **Target Application URL**: `https://app.your-domain.example`
+- **Fallback URL**: `https://<your-private-network-hostname>`
+
+> [!NOTE]
+> For independent deployment, replace the demo domain and Tailscale fallback with your own production domain and private server hostnames.
 
 ---
 
@@ -38,8 +41,8 @@ Use the following credentials for role transitions during the presentation.
 
 ## 4. Pre-Demo Checklist
 Prior to starting the demonstration, verify the following checks:
-- [ ] Public endpoint is active and loads the login page correctly (`https://app.corelasi.my.id`).
-- [ ] Fallback VPN/Tailscale connection is established and verified.
+- [ ] Public endpoint is active and loads the login page correctly (`https://app.your-domain.example`).
+- [ ] Fallback VPN/private network connection is established and verified.
 - [ ] A clean browser window (Incognito/Private) is open to prevent session interference.
 - [ ] Showcase mode is enabled (`SHOWCASE_MODE=True`) on the backend server for quick account switching.
 - [ ] Demo data (schedules, classes, journals) are seeded and ready.
@@ -68,7 +71,7 @@ graph LR
 
 | Step | Role | Action | Expected Result | Demo Talking Point | Recovery Note |
 | :---: | :--- | :--- | :--- | :--- | :--- |
-| **1** | None | Navigate to `https://app.corelasi.my.id`. | Page loads, displaying "Sistem Administrasi Akademik SMAT Baiturrahman". | "This is the secure login portal, utilizing HSTS and modern responsive styling." | Refresh page or use Tailscale private URL. |
+| **1** | None | Navigate to `https://app.your-domain.example`. | Page loads, displaying "Sistem Administrasi Akademik SMAT Baiturrahman". | "This is the secure login portal, utilizing HSTS and modern responsive styling." | Refresh page or use private network URL. |
 | **2** | None | Click showcase admin login. | Logged in and redirected to `/admin/dashboard`. | "We are entering as Admin. Notice the dashboard summaries with a flat container styling." | Manual login if showcase button is disabled. |
 | **3** | Admin | Click "Manajemen Pengguna" in sidebar. | Users list page loads cleanly. | "Admin can manage roles (Admin, Guru, Siswa) and track account activities." | Re-fetch page if loading is delayed. |
 | **4** | Admin | Click "Jadwal Pelajaran". | Global schedule grid is displayed. | "Here, the administrator maps subjects, classrooms, and teachers for the current academic year." | Verify backend server status if empty. |
@@ -90,7 +93,7 @@ graph LR
 | :--- | :--- | :--- |
 | **Login fails with HTTP 400/403** | Expired session or incorrect mock user state. | Use Incognito tab, clear session cache, or recreate docker containers. |
 | **Blank charts / No KPI statistics** | Seed data not applied to database. | Run backend seed script: `python manage.py loaddata demo_data.json` |
-| **Public domain app.corelasi.my.id offline** | Cloudflare Tunnel daemon stopped on server. | Log in to server and restart tunnel: `sudo systemctl restart cloudflared` |
+| **Public domain app.your-domain.example offline** | Cloudflare Tunnel daemon stopped on server. | Log in to server and restart tunnel: `sudo systemctl restart cloudflared` |
 | **Teacher attendance sheet is empty** | Class schedules do not intersect with current day/time. | Admin modifies schedule parameters in Setup to match current day of week. |
 | **Cannot switch roles cleanly** | Access tokens cached in local state. | Click manual Logout button, or press `Ctrl + F5` to reload page from scratch. |
 
@@ -99,8 +102,8 @@ graph LR
 ## 8. Recovery & Fallback Plan
 If a critical system component fails during the live presentation, execute the following actions:
 1.  **Immediate Refresh**: Press `F5` to trigger a reload of state from index database.
-2.  **Tailscale Fallback**: If public routing is down, immediately switch the browser tab to:
-    `https://desktop-0e2e0e5-1.tail320122.ts.net`
+2.  **Private Network Fallback**: If public routing is down, immediately switch the browser tab to:
+    `https://<your-private-network-hostname>`
 3.  **Local Staging Switch**: If production server goes offline, launch developer preview locally on presentation machine:
     *   Backend: `python manage.py runserver`
     *   Frontend: `npm run dev`

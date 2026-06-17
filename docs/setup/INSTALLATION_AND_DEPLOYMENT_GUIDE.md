@@ -271,7 +271,7 @@ Untuk melakukan deployment langsung pada server produksi berbasis Linux (misal: 
 6. **Verify Domain & Smoke Test**:
    Lakukan verifikasi domain HTTPS dan jalankan script pengujian backend produksi:
    ```bash
-   ./scripts/smoke-production.sh https://app.corelasi.my.id
+   ./scripts/smoke-production.sh https://app.your-domain.example
    ```
 
 ---
@@ -284,7 +284,7 @@ Berikut adalah tabel referensi variabel lingkungan (environment variables) yang 
 | :--- | :--- | :--- | :--- |
 | `DEBUG` | Ya | `True` (dev) atau `False` (prod). Menyalakan mode debug. | Semua |
 | `SECRET_KEY` | Ya | String enkripsi acak minimal 50 karakter untuk keamanan token. | Semua |
-| `ALLOWED_HOSTS` | Ya | Host yang diizinkan, dipisahkan koma, contoh: `localhost,app.corelasi.my.id`. | Semua |
+| `ALLOWED_HOSTS` | Ya | Host yang diizinkan, dipisahkan koma, contoh: `localhost,app.your-domain.example`. | Semua |
 | `CORS_ALLOWED_ORIGINS` | Ya | Origin yang diizinkan untuk request lintas domain. | Semua |
 | `CSRF_TRUSTED_ORIGINS` | Ya | URL trusted domain untuk pengecekan CSRF token. | Semua |
 | `DB_ENGINE` | Ya | Engine database: `sqlite` atau `postgresql`. | Semua |
@@ -339,7 +339,7 @@ Jika rilis versi baru gagal atau crash pada saat deployment live:
    ```
 4. Jalankan kembali uji kelayakan (smoke test) untuk memastikan sistem kembali normal:
    ```bash
-   ./scripts/smoke-production.sh https://app.corelasi.my.id
+   ./scripts/smoke-production.sh https://app.your-domain.example
    ```
 
 ---

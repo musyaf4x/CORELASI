@@ -10,8 +10,11 @@ This document serves as the Tech Lead production deployment checklist for CORELA
 *   **Sprint**: Sprint 12 - Deployment Preparation
 *   **Owner**: Hafidz Musyafa Azmi (Tech Lead)
 *   **Branch**: `feature/s12-deploy-checklist`
-*   **Target Application URL**: `https://app.corelasi.my.id`
-*   **Fallback Private URL (Tailscale)**: `https://desktop-0e2e0e5-1.tail320122.ts.net`
+*   **Target Application URL**: `https://app.your-domain.example`
+*   **Fallback Private URL (Tailscale)**: `https://<your-private-network-hostname>`
+
+> [!NOTE]
+> For independent deployment, replace the demo domain and Tailscale fallback with your own production domain and private server hostnames.
 
 ---
 
@@ -45,8 +48,8 @@ The following environment variables must be defined on the production target mac
 ### Backend Configurations
 *   `DJANGO_SECRET_KEY`: Long, random cryptographic key for session/cookie signatures.
 *   `DEBUG`: Must be set to `False` in production.
-*   `ALLOWED_HOSTS`: List of domains/IPs authorized to access the site (e.g. `app.corelasi.my.id`, `localhost`).
-*   `CSRF_TRUSTED_ORIGINS`: Origins authorized for secure POST requests (e.g. `https://app.corelasi.my.id`).
+*   `ALLOWED_HOSTS`: List of domains/IPs authorized to access the site (e.g. `app.your-domain.example`, `localhost`).
+*   `CSRF_TRUSTED_ORIGINS`: Origins authorized for secure POST requests (e.g. `https://app.your-domain.example`).
 *   `CORS_ALLOWED_ORIGINS`: Origins allowed for cross-resource scripting (if frontend and backend domains are separate).
 *   `DB_ENGINE`: Set to PostgreSQL engine in production (`django.db.backends.postgresql`).
 *   `DB_NAME`: Database name for PostgreSQL.
@@ -58,7 +61,7 @@ The following environment variables must be defined on the production target mac
 *   `SHOWCASE_ACCOUNT_EMAILS`: Comma-separated list of quick-login showcase emails.
 
 ### Frontend Configurations
-*   `VITE_API_BASE_URL`: Base endpoint for API requests (e.g. `https://app.corelasi.my.id/api`).
+*   `VITE_API_BASE_URL`: Base endpoint for API requests (e.g. `https://app.your-domain.example/api`).
 
 ---
 
@@ -130,7 +133,7 @@ In the event of a critical failure during smoke testing or service start-up, exe
 
 1.  **Identify Previous Stable Release**: Check the releases log or active directory:
     ```bash
-    ls -l /home/hafidz/apps/corelasi/releases/
+    ls -l /home/<YOUR_USER>/apps/corelasi/releases/
     ```
 2.  **Restore Docker Containers to Previous Release**:
     *   Change current symlink back to the previous stable release folder.
@@ -150,7 +153,7 @@ Following a successful deploy, the operator must execute the following test scen
 
 | Area | Scenario | Expected Behavior | Status | Evidence / Notes |
 | :--- | :--- | :--- | :---: | :--- |
-| **Public URL** | Access `https://app.corelasi.my.id` in a clean browser session. | Returns HTTP 200 and loads the login page correctly. | Pending | Execute on deploy |
+| **Public URL** | Access `https://app.your-domain.example` in a clean browser session. | Returns HTTP 200 and loads the login page correctly. | Pending | Execute on deploy |
 | **Login Admin** | Authenticate using admin credentials. | Successful redirect to `/admin/dashboard` layout. | Pending | Check cookies / tokens |
 | **Login Guru** | Authenticate using teacher credentials. | Successful redirect to `/guru/dashboard` layout. | Pending | Verify role chips |
 | **Login Siswa** | Authenticate using student credentials. | Successful redirect to `/siswa/dashboard` layout. | Pending | Verify dashboard modules |

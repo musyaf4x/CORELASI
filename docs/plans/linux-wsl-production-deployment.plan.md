@@ -1,7 +1,7 @@
 # Plan: Linux WSL Production Deployment
 
 **Source**: User-approved seven-step deployment sequence
-**Target**: `desktop-0e2e0e5-1.tail320122.ts.net`
+**Target**: `<your-private-network-hostname>`
 **Complexity**: Large
 
 ## Summary

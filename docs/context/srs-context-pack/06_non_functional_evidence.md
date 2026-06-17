@@ -18,5 +18,5 @@
 
 Catatan NFR:
 
-1. Detail seperti domain `app.corelasi.my.id`, Cloudflare Tunnel, Tailscale, systemd, dan WSL2 berguna untuk runbook, tetapi jangan mengubah SRS menjadi dokumen deployment.
+1. Detail seperti domain kustom (contoh: `app.your-domain.example`), Cloudflare Tunnel, Tailscale, systemd, dan WSL2 berguna untuk runbook, tetapi jangan mengubah SRS menjadi dokumen deployment.
 2. Security yang paling relevan untuk SRS adalah autentikasi, otorisasi, validasi, HTTPS, session handling, dan backup/recovery.
