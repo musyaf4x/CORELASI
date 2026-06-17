@@ -50,20 +50,3 @@ cp .env.example .env
 # Pastikan VITE_API_BASE_URL mengarah ke http://localhost:8000/api
 npm run dev
 ```
-
-## Alur Kerja
-
-1. Ambil task dari Jira sesuai sprint dan role.
-2. Buat branch sesuai nama branch di Jira.
-3. Kerjakan hanya file yang termasuk scope task.
-4. Commit dengan message yang disepakati di Jira.
-5. Push branch ke GitHub.
-6. Lampirkan link commit/branch dan evidence ke Jira.
-
-## Aturan Dasar
-
-- Jangan commit file `.env` asli atau credential.
-- Jangan commit dependency lokal seperti `node_modules/` atau `.venv/`.
-- Jangan mengubah file milik role lain tanpa koordinasi di Jira.
-- Gunakan branch per task agar riwayat kontribusi tetap rapi.
-
